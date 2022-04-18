@@ -5,7 +5,7 @@
 
 usage() {
 cat << EOF
-Usage: $0 input.pdf output
+Usage: $(basename $0) input.pdf output
 Splits one large pdf into pieces.
 'input.pdf' is the document to split.
 'ouput' will produce splits like 'output.00538.pdf'.
@@ -37,7 +37,7 @@ install_help()
 dpkg -s "${needed_packages[@]}" >/dev/null 2>&1 || install_help
 
 # Check that we have two parameters given
-(( $# != 2 )) && usage && exit 1
+(( $# != 2 )) && usage && exit 0
 # Check that the first parameter is a file
 [[ ! -f $1 ]] && echo "The first parameter has to be a pdf that exists!" && usage && exit 1
 # Check that we wouldn't overwrite anything
