@@ -68,5 +68,13 @@ function teardown() {
   assert_line --regexp 'gs_command -dFirstPage=1 -dLastPage=1.*file.00123.pdf'
   assert_line --regexp 'gs_command -dFirstPage=2 -dLastPage=3.*file.00124.pdf'
   assert_line --regexp 'gs_command -dFirstPage=4 -sOutput.*file.00125.pdf'
-  # if [ -z "$(ls -A /path/to/dir)" ]; then
 }
+
+@test 'Check PDF splitting' {
+  run docsplit.sh "$DIR/data/Simple.pdf" "$TEST_DIR/file"
+  [ "$status" -eq 0 ]
+  [ -e "$TEST_DIR/file.00123.pdf" ]
+  [ -e "$TEST_DIR/file.00124.pdf" ]
+  [ -e "$TEST_DIR/file.00125.pdf" ]
+}
+
