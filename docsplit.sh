@@ -13,6 +13,8 @@ Options:
     Output this text.
   --noop
     Simulate running the script but don't do anything.
+  --pages_please
+    Find the pages in the given document
 
 'input.pdf' is the document to split.
 'ouput' will produce splits like 'output.00538.pdf'.
@@ -60,12 +62,13 @@ dpkg -s "${needed_packages[@]}" >/dev/null 2>&1 || install_help
 # -n name of program to report
 {
   TEMP=`getopt -o h \
-               --long help,noop,version \
+               --long help,noop,pages_please,version \
                -n 'docsplit.sh' -- "$@"`
   # Defaults
   PRINT_HELP=""
   PRINT_VERSION=""
   NOOP=""
+  PAGES=""
   # Break on errors and report correct usage.
   if [ $? != 0 ] ; then echo "ERROR: Came accross a wrong option. Terminating..." >&2; usage; exit 1 ; fi
   # Note the quotes around `$TEMP': they are essential!
@@ -74,6 +77,7 @@ dpkg -s "${needed_packages[@]}" >/dev/null 2>&1 || install_help
     case "$1" in
       -h | --help ) PRINT_HELP=true; shift ;;
       --noop ) NOOP=true; shift ;;
+      --pages_please ) PAGES=true; shift ;;
       --version ) PRINT_VERSION=true; shift ;;
       -- ) shift; break ;;
       * ) break ;;
@@ -107,7 +111,7 @@ gs_command() {
 # Find pages in the pdf
 # This constructs a python dict with page:found_number
 pages=$(pdfgrep -no -P '(?<=[^0-9]00)[0-9]{3}(?=[^0-9])' "$1" | tr '\n' ', ' | sed 's/^/{/'; echo "}") || true
-echo "$pages"
+[[ $PAGES ]] && echo "$pages" && exit 0
 # Create a command line for ghostscript
 result=$(python3 <<EOF
 def sliding_window(elements, window_size):
