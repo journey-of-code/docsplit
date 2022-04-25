@@ -65,6 +65,8 @@ dpkg -s "${needed_packages[@]}" >/dev/null 2>&1 || install_help
 # -n name of program to report
 {
   # Defaults
+  AUTOINCREMENT=""
+  START="1"
   DIVIDERS=""
   PRINT_HELP=""
   PRINT_VERSION=""
@@ -75,7 +77,7 @@ dpkg -s "${needed_packages[@]}" >/dev/null 2>&1 || install_help
   REGEX='(?<=[^0-9]00)[0-9]{3}(?=[^0-9])'
   # Read options
   TEMP=$(getopt -o h \
-               --long help,dividers,noop,pages::,regex:,version \
+               --long autoincrement::,help,dividers,noop,pages::,regex:,version \
                -n "$executable" -- "$@") || PARSEFAIL=true
   # Break on errors and report correct usage.
   [[ $PARSEFAIL ]] && usage && exit 1
@@ -83,6 +85,11 @@ dpkg -s "${needed_packages[@]}" >/dev/null 2>&1 || install_help
   eval set -- "$TEMP"
   while true; do
     case "$1" in
+      --autoincrement )
+        case "$2" in
+          "") AUTOINCREMENT=true; shift 2 ;;
+          *) AUTOINCREMENT=true; START=$2 ; shift 2 ;;
+        esac ;;
       -h | --help ) PRINT_HELP=true; shift ;;
       --noop ) NOOP=true; shift ;;
       --pages )
@@ -129,6 +136,8 @@ gs_command() {
 result=$(python3 <<EOF
 pages = "$PAGES"
 dividers = "$DIVIDERS" == "true"
+autoincrement = "$AUTOINCREMENT" == "true"
+start = $START
 
 inpages, outfiles = [], []
 result = ""
@@ -159,8 +168,15 @@ def sliding_window(elements, window_size):
 
 items = [(int(e[0]),e[1]) for e in [e.split(":") for e in pages.split(",") if e]]
 for first, second in sliding_window(items,2):
-  gsprint(first[0], second[0]-1, "$1", "$2", first[1])
-gsprint(items[-1][0], "", "$1", "$2", items[-1][1])
+  if autoincrement:
+    gsprint(first[0], second[0]-1, "$1", "$2", str(start))
+    start += 1
+  else:
+    gsprint(first[0], second[0]-1, "$1", "$2", first[1])
+if autoincrement:
+  gsprint(items[-1][0], "", "$1", "$2", str(start))
+else:
+  gsprint(items[-1][0], "", "$1", "$2", items[-1][1])
 print(result)
 EOF
 ) || PARSEFAIL=true

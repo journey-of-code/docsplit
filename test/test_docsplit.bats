@@ -135,3 +135,21 @@ function teardown() {
   assert_line --partial "-dFirstPage=2 -dLastPage=2"
   assert_line --partial "-dFirstPage=4 -sOutputFile"
 }
+
+@test 'Check auto-increment' {
+  run docsplit.sh --noop --autoincrement --regex '(?<=Text on)' "$DIR/data/Simple.pdf" "$TEST_DIR/file"
+  assert_success
+  assert_line --partial "file.00001.pdf"
+  assert_line --partial "file.00002.pdf"
+  assert_line --partial "file.00003.pdf"
+  assert_line --partial "file.00004.pdf"
+  run docsplit.sh --noop --autoincrement=100 --regex '(?<=Text on)' "$DIR/data/Simple.pdf" "$TEST_DIR/file"
+  assert_success
+  assert_line --partial "file.00100.pdf"
+  assert_line --partial "file.00101.pdf"
+  assert_line --partial "file.00102.pdf"
+  assert_line --partial "file.00103.pdf"
+  run docsplit.sh --noop --autoincrement=100 --regex '(?<=(First|Third))' "$DIR/data/Simple.pdf" "$TEST_DIR/file"
+  assert_line --partial "file.00100.pdf"
+  assert_line --partial "file.00101.pdf"
+}
