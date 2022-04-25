@@ -10,20 +10,29 @@ Usage: $(basename $0) [options] input.pdf output
 Splits one large pdf into pieces.
 
 Options:
+  --autoincrement=START
+    Appends five-digit output numbers to the output files starting from START or 1 if START is not defined.
+  --dividers
+    Treat found (or given) page number as dividers and dont include them in the output.
   --help
     Output this text.
   --noop
     Simulate running the script but don't do anything.
-  --pages
-    Find the pages in the given document.
+  --pages=PAGES
+    Prints the found pages in the given document if PAGES is not defined.
+    If PAGES is defined, uses the given page numbers instead of searching them in the input pdf.
+    The format is x1:n1,x2:n2,... where 'x' needs to be a number of a page in the document and 'n' the name of the resulting document postfix.
+    'n' can also be empty.
+  --regex=REGEX
+    If present, replaces the default regex '(?<=[^0-9]00)[0-9]{3}(?=[^0-9])' with one of your own.
+    The matching part will be post-fixed to the output name.
+    Therefore it should be unique to the document, or --autoincrement should be used.
   --version
     Print the version of the script.
-  --regex
-    Specify an own regex that will be used to extract the file numbers/names.
 
 'input.pdf' is the document to split.
 'ouput' will produce splits like 'output.00538.pdf'.
-The document number will be read from the files.
+The document number will be read from the files by default.
 
 Author: $AUTHOR
 Version: $VERSION
