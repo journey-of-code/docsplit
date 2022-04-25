@@ -120,17 +120,21 @@ gs_command() {
 }
 
 # Find pages in the pdf
-# This constructs a python dict with page:found_number
-# pages=$(pdfgrep -no -P "$(printf '[%q]' $REGEX)" "$1" | tr '\n' ', ' | sed 's/^/{/'; echo "}") || true
-[[ $PAGES ]] || PAGES=$(pdfgrep -no -P "$REGEX" "$1" | tr '\n' ', ' | sed 's/^/{/'; echo "}") || true
+# Results in a list with page:found_number,...
+[[ $PAGES ]] || PAGES=$(pdfgrep -no -P "$REGEX" "$1" | tr '\n' ', ' | sed 's/,$//') || true
+[[ $PRINTPAGES ]] && echo "$PAGES" && exit 0
 # Create a command line for ghostscript
 result=$(python3 <<EOF
 pages = "$PAGES"
 
-outfiles = []
+inpages, outfiles = [], []
 result = ""
 def gsprint(first, last, indoc, outdoc, number):
-  global result, outfiles
+  global result, inpages, outfiles
+  if first in inpages:
+    print(f"page '{first}' would result in two different output files.")
+    exit(1)
+  inpages.append(first)
   if last:
     last = f" -dLastPage={last}"
   if number.isdigit(): number = f"{int(number):05d}"
@@ -147,7 +151,7 @@ def sliding_window(elements, window_size):
   for i in range(len(elements)- window_size + 1):
     yield elements[i:i+window_size]
 
-items = [(int(e[0]),e[1]) for e in [e.split(":") for e in pages.split(",")]]
+items = [(int(e[0]),e[1]) for e in [e.split(":") for e in pages.split(",") if e]]
 for first, second in sliding_window(items,2):
   gsprint(first[0], second[0]-1, "$1", "$2", first[1])
 gsprint(items[-1][0], "", "$1", "$2", items[-1][1])

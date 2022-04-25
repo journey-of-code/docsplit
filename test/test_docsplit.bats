@@ -84,41 +84,48 @@ function teardown() {
 }
 
 @test 'Check intermediate output' {
-  run docsplit.sh --pages_please "$DIR/data/Simple.pdf" "$TEST_DIR/file"
+  run docsplit.sh --pages "$DIR/data/Simple.pdf" "$TEST_DIR/file"
   assert_success
-  assert_output '{1:123,2:124,4:125,}'
+  assert_output '1:123,2:124,4:125'
 }
 
 @test 'Check command line regex' {
   # To try regexes:
   # pdfgrep -no -P "$regex" data/Simple.pdf
-  run docsplit.sh --pages_please --regex '(?<=[^0-9]00)[0-9]{3}(?=[^0-9])' "$DIR/data/Simple.pdf" "$TEST_DIR/file"
+  run docsplit.sh --pages --regex '(?<=[^0-9]00)[0-9]{3}(?=[^0-9])' "$DIR/data/Simple.pdf" "$TEST_DIR/file"
   assert_success
-  assert_output '{1:123,2:124,4:125,}'
-  run docsplit.sh --pages_please --regex '00123' "$DIR/data/Simple.pdf" "$TEST_DIR/file"
+  assert_output '1:123,2:124,4:125'
+  run docsplit.sh --pages --regex '00123' "$DIR/data/Simple.pdf" "$TEST_DIR/file"
   assert_success
-  assert_output '{1:00123,}'
-  run docsplit.sh --pages_please --regex 'Text on' "$DIR/data/Simple.pdf" "$TEST_DIR/file"
+  assert_output '1:00123'
+  run docsplit.sh --pages --regex 'Text on' "$DIR/data/Simple.pdf" "$TEST_DIR/file"
   assert_success
-  assert_output '{1:Text on,2:Text on,3:Text on,4:Text on,}'
-  run docsplit.sh --pages_please --regex '(?<=Text on)' "$DIR/data/Simple.pdf" "$TEST_DIR/file"
+  assert_output '1:Text on,2:Text on,3:Text on,4:Text on'
+  run docsplit.sh --pages --regex '(?<=Text on)' "$DIR/data/Simple.pdf" "$TEST_DIR/file"
   assert_success
-  assert_output '{1:,2:,3:,4:,}'
+  assert_output '1:,2:,3:,4:'
 }
 
-@test 'Check given pages' {
-  run docsplit.sh --pages "1:1,2:2,3:4" "$DIR/data/Simple.pdf" "$TEST_DIR/file"
+@test 'Check page input' {
+  run docsplit.sh --noop --pages="1:1,2:2,3:4" "$DIR/data/Simple.pdf" "$TEST_DIR/file"
   assert_success
-  [ -e "$TEST_DIR/file.1.pdf" ]
-  [ -e "$TEST_DIR/file.2.pdf" ]
-  [ ! -e "$TEST_DIR/file.3.pdf" ]
-  [ -e "$TEST_DIR/file.4.pdf" ]
-  run docsplit.sh --pages "1:1,2:2,3:2" "$DIR/data/Simple.pdf" "$TEST_DIR/file"
+  run docsplit.sh --noop --pages="1:1,2:2,3:2" "$DIR/data/Simple.pdf" "$TEST_DIR/file"
   assert_failure
-  assert_line --regexp 'With the given pages "1:1,2:2,3:2", page 3 would overwrite page 2.'
-  run docsplit.sh --pages "1:1,1:2,3:3" "$DIR/data/Simple.pdf" "$TEST_DIR/file"
+  assert_line --partial "file.00002.pdf' (from page 3)"
+  run docsplit.sh --noop --pages="1:1,1:2,3:3" "$DIR/data/Simple.pdf" "$TEST_DIR/file"
   assert_failure
-  assert_line --regexp 'With the given pages "1:1,2:2,3:2", page 1 would result in two different output files.'
+  assert_line --partial "page '1' would result in two different output files."
+  run docsplit.sh --noop --pages="1:1,2:2,2:3" "$DIR/data/Simple.pdf" "$TEST_DIR/file"
+  assert_failure
+  assert_line --partial "page '2' would result in two different output files."
 }
 
+@test 'Check execution from page input' {
+  run docsplit.sh --pages="1:1,2:2,3:4" "$DIR/data/Simple.pdf" "$TEST_DIR/file"
+  assert_success
+  [ -e "$TEST_DIR/file.00001.pdf" ]
+  [ -e "$TEST_DIR/file.00002.pdf" ]
+  [ ! -e "$TEST_DIR/file.00003.pdf" ]
+  [ -e "$TEST_DIR/file.00004.pdf" ]
+}
 
