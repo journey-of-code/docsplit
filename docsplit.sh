@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+executable=$(basename $0)
 VERSION="0.1"
 AUTHOR="Pascal Bertram"
 
@@ -30,7 +31,6 @@ EOF
 }
 
 version() {
-  executable=$(basename $0)
   echo "${executable%\.sh} $VERSION"
 }
 
@@ -58,24 +58,25 @@ install_help()
 }
 ## Run the run_install function if any of the libraries are missing
 dpkg -s "${needed_packages[@]}" >/dev/null 2>&1 || install_help
-
 # Parse parameters
 # See http://stackoverflow.com/questions/402377/using-getopts-in-bash-shell-script-to-get-long-and-short-command-line-options
 # -o list of all single letter parameters (trailing ':' means it needs to have a value)
 # --long list of all long options (trailing ':' means it needs to have a value)
 # -n name of program to report
 {
-  TEMP=`getopt -o h \
-               --long help,noop,pages_please,regex:,version \
-               -n 'docsplit.sh' -- "$@"`
   # Defaults
   PRINT_HELP=""
   PRINT_VERSION=""
   NOOP=""
   PAGES=""
+  PARSEFAIL=""
   REGEX='(?<=[^0-9]00)[0-9]{3}(?=[^0-9])'
+  # Read options
+  TEMP=$(getopt -o h \
+               --long help,noop,pages_please,regex:,version \
+               -n "$executable" -- "$@") || PARSEFAIL=true
   # Break on errors and report correct usage.
-  if [ $? != 0 ] ; then echo "ERROR: Came accross a wrong option. Terminating..." >&2; usage; exit 1 ; fi
+  [[ $PARSEFAIL ]] && usage && exit 1
   # Note the quotes around `$TEMP': they are essential!
   eval set -- "$TEMP"
   while true; do
@@ -97,7 +98,7 @@ dpkg -s "${needed_packages[@]}" >/dev/null 2>&1 || install_help
 
 # Checking assumptions
 # Check that we have two parameters given
-(( $# != 2 )) && usage && exit 1
+(( $# != 2 )) && echo "Expecting two nameless parameters. Got $#." && usage && exit 1
 # Check that the first parameter is a file
 [[ ! -f $1 ]] && echo "The first parameter has to be a pdf that exists!" && usage && exit 1
 # Check that we wouldn't overwrite anything
