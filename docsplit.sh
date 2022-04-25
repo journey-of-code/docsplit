@@ -65,6 +65,7 @@ dpkg -s "${needed_packages[@]}" >/dev/null 2>&1 || install_help
 # -n name of program to report
 {
   # Defaults
+  DIVIDERS=""
   PRINT_HELP=""
   PRINT_VERSION=""
   NOOP=""
@@ -74,7 +75,7 @@ dpkg -s "${needed_packages[@]}" >/dev/null 2>&1 || install_help
   REGEX='(?<=[^0-9]00)[0-9]{3}(?=[^0-9])'
   # Read options
   TEMP=$(getopt -o h \
-               --long help,noop,pages::,regex:,version \
+               --long help,dividers,noop,pages::,regex:,version \
                -n "$executable" -- "$@") || PARSEFAIL=true
   # Break on errors and report correct usage.
   [[ $PARSEFAIL ]] && usage && exit 1
@@ -90,6 +91,7 @@ dpkg -s "${needed_packages[@]}" >/dev/null 2>&1 || install_help
           *) PAGES=$2 ; shift 2 ;;
         esac ;;
       --version ) PRINT_VERSION=true; shift ;;
+      --dividers ) DIVIDERS=true; shift ;;
       --regex ) REGEX="$2"; shift 2 ;;
       -- ) shift; break ;;
       * ) break ;;
@@ -126,11 +128,14 @@ gs_command() {
 # Create a command line for ghostscript
 result=$(python3 <<EOF
 pages = "$PAGES"
+dividers = "$DIVIDERS" == "true"
 
 inpages, outfiles = [], []
 result = ""
 def gsprint(first, last, indoc, outdoc, number):
   global result, inpages, outfiles
+  if dividers:
+    first += 1
   if first in inpages:
     print(f"page '{first}' would result in two different output files.")
     exit(1)
@@ -147,7 +152,8 @@ def gsprint(first, last, indoc, outdoc, number):
 
 def sliding_window(elements, window_size):
   if len(elements) <= window_size:
-    return elements
+    yield elements
+    return
   for i in range(len(elements)- window_size + 1):
     yield elements[i:i+window_size]
 

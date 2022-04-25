@@ -129,3 +129,9 @@ function teardown() {
   [ -e "$TEST_DIR/file.00004.pdf" ]
 }
 
+@test 'Check omitting of divider pages' {
+  run docsplit.sh --noop --dividers --page="1:doc1,3:doc2" "$DIR/data/Simple.pdf" "$TEST_DIR/file"
+  assert_success
+  assert_line --partial "-dFirstPage=2 -dLastPage=2"
+  assert_line --partial "-dFirstPage=4 -sOutputFile"
+}
