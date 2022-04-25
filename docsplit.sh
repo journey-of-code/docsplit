@@ -14,7 +14,11 @@ Options:
   --noop
     Simulate running the script but don't do anything.
   --pages_please
-    Find the pages in the given document
+    Find the pages in the given document.
+  --version
+    Print the version of the script.
+  --regex
+    Specify an own regex that will be used to extract the file numbers/names.
 
 'input.pdf' is the document to split.
 'ouput' will produce splits like 'output.00538.pdf'.
@@ -62,13 +66,14 @@ dpkg -s "${needed_packages[@]}" >/dev/null 2>&1 || install_help
 # -n name of program to report
 {
   TEMP=`getopt -o h \
-               --long help,noop,pages_please,version \
+               --long help,noop,pages_please,regex:,version \
                -n 'docsplit.sh' -- "$@"`
   # Defaults
   PRINT_HELP=""
   PRINT_VERSION=""
   NOOP=""
   PAGES=""
+  REGEX='(?<=[^0-9]00)[0-9]{3}(?=[^0-9])'
   # Break on errors and report correct usage.
   if [ $? != 0 ] ; then echo "ERROR: Came accross a wrong option. Terminating..." >&2; usage; exit 1 ; fi
   # Note the quotes around `$TEMP': they are essential!
@@ -79,6 +84,7 @@ dpkg -s "${needed_packages[@]}" >/dev/null 2>&1 || install_help
       --noop ) NOOP=true; shift ;;
       --pages_please ) PAGES=true; shift ;;
       --version ) PRINT_VERSION=true; shift ;;
+      --regex ) REGEX="$2"; shift 2 ;;
       -- ) shift; break ;;
       * ) break ;;
     esac
@@ -110,7 +116,8 @@ gs_command() {
 
 # Find pages in the pdf
 # This constructs a python dict with page:found_number
-pages=$(pdfgrep -no -P '(?<=[^0-9]00)[0-9]{3}(?=[^0-9])' "$1" | tr '\n' ', ' | sed 's/^/{/'; echo "}") || true
+# pages=$(pdfgrep -no -P "$(printf '[%q]' $REGEX)" "$1" | tr '\n' ', ' | sed 's/^/{/'; echo "}") || true
+pages=$(pdfgrep -no -P "$REGEX" "$1" | tr '\n' ', ' | sed 's/^/{/'; echo "}") || true
 [[ $PAGES ]] && echo "$pages" && exit 0
 # Create a command line for ghostscript
 result=$(python3 <<EOF
