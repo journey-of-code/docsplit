@@ -14,7 +14,7 @@ Options:
     Output this text.
   --noop
     Simulate running the script but don't do anything.
-  --pages_please
+  --pages
     Find the pages in the given document.
   --version
     Print the version of the script.
@@ -69,11 +69,12 @@ dpkg -s "${needed_packages[@]}" >/dev/null 2>&1 || install_help
   PRINT_VERSION=""
   NOOP=""
   PAGES=""
+  PRINTPAGES=""
   PARSEFAIL=""
   REGEX='(?<=[^0-9]00)[0-9]{3}(?=[^0-9])'
   # Read options
   TEMP=$(getopt -o h \
-               --long help,noop,pages_please,regex:,version \
+               --long help,noop,pages::,regex:,version \
                -n "$executable" -- "$@") || PARSEFAIL=true
   # Break on errors and report correct usage.
   [[ $PARSEFAIL ]] && usage && exit 1
@@ -83,7 +84,11 @@ dpkg -s "${needed_packages[@]}" >/dev/null 2>&1 || install_help
     case "$1" in
       -h | --help ) PRINT_HELP=true; shift ;;
       --noop ) NOOP=true; shift ;;
-      --pages_please ) PAGES=true; shift ;;
+      --pages )
+        case "$2" in
+          "") PRINTPAGES=true; shift 2 ;;
+          *) PAGES=$2 ; shift 2 ;;
+        esac ;;
       --version ) PRINT_VERSION=true; shift ;;
       --regex ) REGEX="$2"; shift 2 ;;
       -- ) shift; break ;;
@@ -91,7 +96,6 @@ dpkg -s "${needed_packages[@]}" >/dev/null 2>&1 || install_help
     esac
   done
 }
-
 # Print help if wanted and exit.
 [[ $PRINT_VERSION ]] && version && exit 0
 [[ $PRINT_HELP ]] && usage && exit 0
@@ -118,28 +122,39 @@ gs_command() {
 # Find pages in the pdf
 # This constructs a python dict with page:found_number
 # pages=$(pdfgrep -no -P "$(printf '[%q]' $REGEX)" "$1" | tr '\n' ', ' | sed 's/^/{/'; echo "}") || true
-pages=$(pdfgrep -no -P "$REGEX" "$1" | tr '\n' ', ' | sed 's/^/{/'; echo "}") || true
-[[ $PAGES ]] && echo "$pages" && exit 0
+[[ $PAGES ]] || PAGES=$(pdfgrep -no -P "$REGEX" "$1" | tr '\n' ', ' | sed 's/^/{/'; echo "}") || true
 # Create a command line for ghostscript
 result=$(python3 <<EOF
+pages = "$PAGES"
+
+outfiles = []
+result = ""
+def gsprint(first, last, indoc, outdoc, number):
+  global result, outfiles
+  if last:
+    last = f" -dLastPage={last}"
+  if number.isdigit(): number = f"{int(number):05d}"
+  outfile=f"{outdoc}.{number}.pdf"
+  result += f"gs_command -dFirstPage={first}{last} -sOutputFile={outfile} {indoc}\n"
+  if outfile in outfiles:
+    print(f"the file '{outfile}' (from page {first}) would be overwritten with the current page names.")
+    exit(1)
+  outfiles.append(outfile)
+
 def sliding_window(elements, window_size):
   if len(elements) <= window_size:
     return elements
   for i in range(len(elements)- window_size + 1):
     yield elements[i:i+window_size]
-def qprint(first, last, indoc, outdoc, number):
-  print(f"qpdf {indoc} --pages {indoc} {first}-{last} -- {outdoc}.{number:05d}.pdf")
-def gsprint(first, last, indoc, outdoc, number):
-  if last:
-    last = f" -dLastPage={last}"
-  print(f"gs_command -dFirstPage={first}{last} -sOutputFile={outdoc}.{number:05d}.pdf {indoc}")
-page_dict = $pages
-items = [(k,v) for k,v in page_dict.items()]
+
+items = [(int(e[0]),e[1]) for e in [e.split(":") for e in pages.split(",")]]
 for first, second in sliding_window(items,2):
   gsprint(first[0], second[0]-1, "$1", "$2", first[1])
 gsprint(items[-1][0], "", "$1", "$2", items[-1][1])
+print(result)
 EOF
-)
+) || PARSEFAIL=true
+[[ $PARSEFAIL ]] && echo "With the pages: '$PAGES', $result" && exit 1
 # This will execute the result from python line by line
 # See https://unix.stackexchange.com/a/181581
 if [[ $NOOP ]]; then
