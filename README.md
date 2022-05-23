@@ -39,6 +39,9 @@ The document number will be read from the files by default.
 ```
 
 # Examples
+
+To follow along, check out the dev branch which contains a simple pdf document.
+
 ```bash
 # This would:
 # - apply the default regex to search for pages in the given file
@@ -51,7 +54,9 @@ docsplit.sh --noop "$DIR/data/Simple.pdf" "$TEST_DIR/file"
 # In that case you can use the output, insert or change the missed pages and use them instead.
 docsplit.sh --pages "$DIR/data/Simple.pdf" "$TEST_DIR/file"
 
-# Uses the given pages instead of searching for some
+# Uses the given pages instead of searching for some.
+# This would result in three pdf documents file.385.pdf (pages 1-3),
+# file.386.pdf (pages 4-5) and file.387.pdf (page 6).
 docsplit.sh --pages=1:385,4:386,6:387 "$DIR/data/Simple.pdf" "$TEST_DIR/file"
 
 # Searches for the text "new page" in the source document and automatically count up from there.
