@@ -4,6 +4,8 @@
 # https://bats-core.readthedocs.io/en/stable/
 # Or a little bit more hands-on:
 # https://opensource.com/article/19/2/testing-bash-bats
+# To comment out a test, you can add this as first line in the test:
+# skip "skipmessage"
 
 setup() {
   load 'test_helper/bats-support/load'
@@ -81,6 +83,17 @@ function teardown() {
   [ -e "$TEST_DIR/file.00123.pdf" ]
   [ -e "$TEST_DIR/file.00124.pdf" ]
   [ -e "$TEST_DIR/file.00125.pdf" ]
+}
+
+@test 'Check whitespace filenames' {
+  run cp "$DIR/data/Simple.pdf" "$TEST_DIR/whitespace file.pdf"
+  assert_success
+  [ -e "$TEST_DIR/whitespace file.pdf" ]
+  run docsplit.sh "$TEST_DIR/whitespace file.pdf" "$TEST_DIR/file out"
+  assert_success
+  [ -e "$TEST_DIR/file out.00123.pdf" ]
+  [ -e "$TEST_DIR/file out.00124.pdf" ]
+  [ -e "$TEST_DIR/file out.00125.pdf" ]
 }
 
 @test 'Check intermediate output' {

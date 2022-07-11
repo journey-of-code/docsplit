@@ -134,7 +134,7 @@ fi
 
 # Alias ghostscript so we don't have to be so verbose
 gs_command() {
-  gs -q -dNOPAUSE -dBATCH -dSAFER -sDEVICE=pdfwrite -dCompatibilityLevel=1.3 -dPDFSETTINGS=/screen -dEmbedAllFonts=true -dSubsetFonts=true -dColorImageDownsampleType=/Bicubic -dColorImageResolution=200 -dGrayImageDownsampleType=/Bicubic -dGrayImageResolution=200 -dMonoImageDownsampleType=/Bicubic -dMonoImageResolution=200 $@
+  gs -q -dNOPAUSE -dBATCH -dSAFER -sDEVICE=pdfwrite -dCompatibilityLevel=1.3 -dPDFSETTINGS=/screen -dEmbedAllFonts=true -dSubsetFonts=true -dColorImageDownsampleType=/Bicubic -dColorImageResolution=200 -dGrayImageDownsampleType=/Bicubic -dGrayImageResolution=200 -dMonoImageDownsampleType=/Bicubic -dMonoImageResolution=200 "$@"
 }
 
 # Find pages in the pdf
@@ -162,7 +162,7 @@ def gsprint(first, last, indoc, outdoc, number):
     last = f" -dLastPage={last}"
   if number.isdigit(): number = f"{int(number):05d}"
   outfile=f"{outdoc}.{number}.pdf"
-  result += f"gs_command -dFirstPage={first}{last} -sOutputFile={outfile} {indoc}\n"
+  result += f"gs_command -dFirstPage={first}{last} -sOutputFile=\"{outfile}\" \"{indoc}\"\n"
   if outfile in outfiles:
     print(f"the file '{outfile}' (from page {first}) would be overwritten with the current page names.")
     exit(1)
